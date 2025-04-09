@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">forgor</string>
+    <string name="task">Task</string>
+    <string name="has_deadline">"Has deadline? "</string>
+    <string name="pick_deadline">Pick deadline</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

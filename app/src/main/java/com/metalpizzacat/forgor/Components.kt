@@ -6,6 +6,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +26,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -41,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,15 +69,14 @@ fun ForgorApp(viewModel: TaskViewModel, modifier: Modifier = Modifier) {
             Icon(Icons.Default.Add, "Add new task icon")
         }
     }) { padding ->
-        Column {
-            TopAppBar(isInCompleted = isInCompletedTasks, modifier = Modifier.padding(padding)) {
+        Column(modifier = modifier.padding(padding)) {
+            TopAppBar(isInCompleted = isInCompletedTasks) {
                 isInCompletedTasks = it
             }
 
             TaskList(
                 viewModel,
                 isInCompletedTasks,
-                modifier = modifier.padding(padding),
                 editRequested = {
                     editedTask = it
                     showBottomSheet = true
@@ -92,6 +94,7 @@ fun ForgorApp(viewModel: TaskViewModel, modifier: Modifier = Modifier) {
                     showBottomSheet = false
                     editedTask = null
                 },
+                modifier = Modifier.fillMaxSize(),
                 sheetState = rememberModalBottomSheetState()
             ) {
                 TaskEditor(task = editedTask, saveRequested = {
@@ -134,12 +137,12 @@ fun DatePickerModal(
                 onDateSelected(datePickerState.selectedDateMillis)
                 onDismiss()
             }) {
-                Text("OK")
+                Text(stringResource(R.string.ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     ) {
@@ -173,41 +176,54 @@ fun TaskEditor(
                         TaskItem(
                             task?.uid,
                             taskText,
-                            deadline,
+                            if (hasDeadline) {
+                                deadline
+                            } else {
+                                null
+                            },
                             false
                         )
                     )
                 }
             }) {
-
-                Icon(
-                    if (taskText.isNotEmpty()) {
-                        Icons.Default.Check
-                    } else {
-                        Icons.Default.Delete
-                    }, contentDescription = "Save edit icon"
-                )
+                if (taskText.isNotEmpty() || task != null) {
+                    Icon(
+                        if (taskText.isNotEmpty()) {
+                            Icons.Default.Check
+                        } else {
+                            Icons.Default.Delete
+                        }, contentDescription = "Save edit icon"
+                    )
+                }
             }
         }
-        Text(text = "Text")
-        TextField(value = taskText, onValueChange = { taskText = it })
+        OutlinedTextField(value = taskText, onValueChange = { taskText = it }, label = {
+            Text(
+                text = stringResource(
+                    R.string.task
+                )
+            )
+        })
         Row {
-            Text(text = "Has deadline? ")
+            Text(text = stringResource(R.string.has_deadline))
             Checkbox(checked = hasDeadline, onCheckedChange = { hasDeadline = it })
         }
 
-        ElevatedCard(onClick = { pickingDeadline = true }, modifier = Modifier.padding(5.dp)) {
-            if (deadline == null) {
-                Text(text = "Pick deadline")
-            } else {
-                Text(
-                    text = SimpleDateFormat(
-                        "EEE dd-MM-yyyy",
-                        Locale.getDefault()
-                    ).format(deadline!!)
-                )
+        AnimatedVisibility(visible = hasDeadline) {
+            ElevatedCard(onClick = { pickingDeadline = true }, modifier = Modifier.padding(5.dp)) {
+                if (deadline == null) {
+                    Text(text = stringResource(R.string.pick_deadline))
+                } else {
+                    Text(
+                        text = SimpleDateFormat(
+                            "EEE dd-MM-yyyy",
+                            Locale.getDefault()
+                        ).format(deadline!!)
+                    )
+                }
             }
         }
+
         AnimatedVisibility(visible = pickingDeadline) {
             DatePickerModal(onDismiss = { pickingDeadline = false }) { date ->
                 deadline = if (date == null) {
@@ -290,7 +306,10 @@ fun TaskRow(
             Text(text = text, fontSize = 26.sp)
         }
         date?.let {
-            ElevatedCard(onClick = { /*TODO*/ }, modifier = Modifier.padding(5.dp)) {
+            ElevatedCard(
+                onClick = { /*do nothing, for sake of simplicity*/ },
+                modifier = Modifier.padding(5.dp)
+            ) {
                 Row(modifier = Modifier.padding(5.dp)) {
                     Text(text = "Due at: ")
                     Text(
@@ -313,7 +332,7 @@ fun TaskPreview() {
         text = "Hello world",
         date = Date(10000000),
         completed = false,
-        selected = { /*TODO*/ }) {
+        selected = { }) {
 
     }
 }
