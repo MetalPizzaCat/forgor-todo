@@ -5,4 +5,6 @@
     <string name="pick_deadline">Pick deadline</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="days">" days "</string>
+    <string name="months">" months "</string>
 </resources>

@@ -32,7 +32,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -42,8 +41,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,9 +53,12 @@ import com.metalpizzacat.forgor.viewmodel.TaskViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,24 +208,28 @@ fun TaskEditor(
                 )
             )
         })
-        Row {
-            Text(text = stringResource(R.string.has_deadline))
+        Row(Modifier.padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = hasDeadline, onCheckedChange = { hasDeadline = it })
-        }
-
-        AnimatedVisibility(visible = hasDeadline) {
-            ElevatedCard(onClick = { pickingDeadline = true }, modifier = Modifier.padding(5.dp)) {
-                if (deadline == null) {
-                    Text(text = stringResource(R.string.pick_deadline))
-                } else {
+            Text(text = stringResource(R.string.has_deadline))
+            AnimatedVisibility(visible = hasDeadline) {
+                ElevatedCard(
+                    onClick = { pickingDeadline = true },
+                    modifier = Modifier.padding(5.dp)
+                ) {
                     Text(
-                        text = SimpleDateFormat(
-                            "EEE dd-MM-yyyy",
-                            Locale.getDefault()
-                        ).format(deadline!!)
+                        text = if (deadline == null) {
+                            stringResource(R.string.pick_deadline)
+                        } else {
+                            SimpleDateFormat(
+                                "EEE dd-MM-yyyy",
+                                Locale.getDefault()
+                            ).format(deadline!!)
+                        },
+                        modifier = Modifier.padding(5.dp)
                     )
                 }
             }
+
         }
 
         AnimatedVisibility(visible = pickingDeadline) {
@@ -303,25 +311,77 @@ fun TaskRow(
     ) {
         Row(modifier = Modifier.padding(5.dp)) {
             Checkbox(checked = completed, onCheckedChange = { toggled(!completed) })
-            Text(text = text, fontSize = 26.sp)
-        }
-        date?.let {
-            ElevatedCard(
-                onClick = { /*do nothing, for sake of simplicity*/ },
-                modifier = Modifier.padding(5.dp)
-            ) {
-                Row(modifier = Modifier.padding(5.dp)) {
-                    Text(text = "Due at: ")
-                    Text(
-                        text = SimpleDateFormat(
-                            "EEE dd-MM-yyyy",
-                            Locale.getDefault()
-                        ).format(date)
-                    )
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                textDecoration = if (completed) {
+                    TextDecoration.LineThrough
+                } else {
+                    null
                 }
+            )
+        }
+        date?.let { date ->
+            Row {
+                ElevatedCard(
+                    onClick = { /*do nothing, for sake of simplicity*/ },
+                    modifier = Modifier.padding(5.dp)
+                ) {
+                    Row(modifier = Modifier.padding(5.dp)) {
+                        Text(text = "Due at: ")
+                        Text(
+                            text = SimpleDateFormat(
+                                "EEE dd-MM-yyyy",
+                                Locale.getDefault()
+                            ).format(date)
+                        )
+                    }
+                }
+
+                RemainingDaysDisplay(date = date)
+
             }
         }
 
+    }
+}
+
+@Composable
+fun RemainingDaysDisplay(date: Date, modifier: Modifier = Modifier) {
+    val daysLeft = ChronoUnit.DAYS.between(
+        LocalDate.now(),
+        date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+    )
+
+    val flavourText = if (daysLeft < 0) {
+        "ago"
+    } else {
+        "left"
+    }
+    ElevatedCard(
+        onClick = { /*do nothing, for sake of simplicity*/ },
+        modifier = modifier.padding(5.dp)
+    ) {
+        Text(
+            text =
+            if (daysLeft == 0L) {
+                "Today"
+            } else if (daysLeft.absoluteValue <= 90) {
+                daysLeft.absoluteValue.toString() + stringResource(R.string.days) + flavourText
+            } else if (daysLeft.absoluteValue <= 400) {
+                val monthsLeft = ChronoUnit.MONTHS.between(
+                    LocalDate.now(),
+                    date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                )
+                monthsLeft.absoluteValue.toString() + stringResource(R.string.months) + flavourText
+            } else {
+                val yearsLeft = ChronoUnit.YEARS.between(
+                    LocalDate.now(),
+                    date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                )
+                yearsLeft.absoluteValue.toString() + " years " + flavourText
+            }, modifier = Modifier.padding(5.dp)
+        )
     }
 }
 
@@ -329,7 +389,9 @@ fun TaskRow(
 @Composable
 fun TaskPreview() {
     TaskRow(
-        text = "Hello world",
+        text = "Hello world\nLong note\nLonger text\nHello world\n" +
+                "Long note\n" +
+                "Longer text",
         date = Date(10000000),
         completed = false,
         selected = { }) {
@@ -337,4 +399,13 @@ fun TaskPreview() {
     }
 }
 
+@Preview
+@Composable
+fun EditorPreview() {
+    TaskEditor(
+        task = null,
+        saveRequested = {},
+        deleteRequested = { /*TODO*/ },
+        canceled = { /*TODO*/ })
+}
 
