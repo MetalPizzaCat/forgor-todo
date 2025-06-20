@@ -9,6 +9,10 @@ import com.metalpizzacat.forgor.data.TaskRepository
 class TaskViewModel(
     val taskRepository: TaskRepository
 ) : ViewModel() {
-    fun getTasks(completed: Boolean): LiveData<List<TaskItem>> =
-        taskRepository.getTasks(completed).asLiveData()
+    fun getTasks(completed: Boolean, searchText: String?): LiveData<List<TaskItem>> =
+        if (searchText == null) {
+            taskRepository.getTasks(completed).asLiveData()
+        } else {
+            taskRepository.getTasksThatContainText(completed, searchText).asLiveData()
+        }
 }

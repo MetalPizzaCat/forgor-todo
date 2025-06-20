@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -16,12 +17,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +36,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -67,6 +72,8 @@ fun ForgorApp(viewModel: TaskViewModel, modifier: Modifier = Modifier) {
     var isInCompletedTasks by remember { mutableStateOf(false) }
     var editedTask by remember { mutableStateOf<TaskItem?>(null) }
     val scope = rememberCoroutineScope()
+    var useSearch by remember { mutableStateOf(false) }
+    var searchText by remember { mutableStateOf<String?>(null) }
     Scaffold(floatingActionButton = {
         FloatingActionButton(
             onClick = { showBottomSheet = true }) {
@@ -77,10 +84,32 @@ fun ForgorApp(viewModel: TaskViewModel, modifier: Modifier = Modifier) {
             TopAppBar(isInCompleted = isInCompletedTasks) {
                 isInCompletedTasks = it
             }
-
+            FilterChip(
+                useSearch, label = { Text("Filter") },
+                onClick = {
+                    useSearch = !useSearch
+                    searchText = null
+                }, leadingIcon = if (useSearch) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Done,
+                            contentDescription = "Done icon",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else {
+                    null
+                })
+            if (useSearch) {
+                TextField(
+                    searchText ?: String(),
+                    onValueChange = { searchText = it },
+                    placeholder = { Text("Search term") })
+            }
             TaskList(
                 viewModel,
                 isInCompletedTasks,
+                searchText,
                 editRequested = {
                     editedTask = it
                     showBottomSheet = true
@@ -271,11 +300,12 @@ fun TopAppBar(
 fun TaskList(
     viewModel: TaskViewModel,
     completed: Boolean,
+    searchText: String?,
     modifier: Modifier = Modifier,
     editRequested: (task: TaskItem) -> Unit,
     taskToggled: (task: TaskItem) -> Unit
 ) {
-    val tasks by viewModel.getTasks(completed).observeAsState()
+    val tasks by viewModel.getTasks(completed, searchText).observeAsState()
 
     tasks?.let { loadedTasks ->
         LazyColumn(modifier = modifier) {
@@ -364,23 +394,23 @@ fun RemainingDaysDisplay(date: Date, modifier: Modifier = Modifier) {
     ) {
         Text(
             text =
-            if (daysLeft == 0L) {
-                "Today"
-            } else if (daysLeft.absoluteValue <= 90) {
-                daysLeft.absoluteValue.toString() + stringResource(R.string.days) + flavourText
-            } else if (daysLeft.absoluteValue <= 400) {
-                val monthsLeft = ChronoUnit.MONTHS.between(
-                    LocalDate.now(),
-                    date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                )
-                monthsLeft.absoluteValue.toString() + stringResource(R.string.months) + flavourText
-            } else {
-                val yearsLeft = ChronoUnit.YEARS.between(
-                    LocalDate.now(),
-                    date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                )
-                yearsLeft.absoluteValue.toString() + " years " + flavourText
-            }, modifier = Modifier.padding(5.dp)
+                if (daysLeft == 0L) {
+                    "Today"
+                } else if (daysLeft.absoluteValue <= 90) {
+                    daysLeft.absoluteValue.toString() + stringResource(R.string.days) + flavourText
+                } else if (daysLeft.absoluteValue <= 400) {
+                    val monthsLeft = ChronoUnit.MONTHS.between(
+                        LocalDate.now(),
+                        date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    )
+                    monthsLeft.absoluteValue.toString() + stringResource(R.string.months) + flavourText
+                } else {
+                    val yearsLeft = ChronoUnit.YEARS.between(
+                        LocalDate.now(),
+                        date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    )
+                    yearsLeft.absoluteValue.toString() + " years " + flavourText
+                }, modifier = Modifier.padding(5.dp)
         )
     }
 }

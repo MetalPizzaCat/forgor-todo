@@ -15,6 +15,9 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE completed = :completed")
     fun getCompleted(completed: Boolean): Flow<List<TaskItem>>
 
+    @Query("select * from task where completed= :completed and text like '%' || :taskText || '%'")
+    fun getContainingTextAndCompleted(completed: Boolean, taskText: String?): Flow<List<TaskItem>>
+
     @Query("SELECT * FROM task WHERE uid = :id")
     fun getTaskById(id: Int): TaskItem?
 
@@ -22,7 +25,7 @@ interface TaskDao {
     fun insertAll(vararg tasks: TaskItem)
 
     @Update
-    fun update(task : TaskItem)
+    fun update(task: TaskItem)
 
     @Delete
     fun delete(task: TaskItem)
